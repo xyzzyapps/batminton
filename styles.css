@@ -20,12 +20,6 @@ main {
   padding: 16px;
 }
 
-.mark {
-  margin: 0;
-  letter-spacing: 0.28em;
-  font-size: 12px;
-}
-
 #crt {
   position: relative;
   padding: 18px;
@@ -101,7 +95,6 @@ html.embed main {
   gap: 0;
 }
 
-html.embed .mark,
 html.embed .help,
 html.embed #pad,
 html.embed .scan {
