@@ -224,6 +224,22 @@ void main() {
     expect(fb.px[mark.y.round() * Framebuffer.width + mark.x.round()], Pal.gold);
   });
 
+  test('the title screen picks easy or hard', () {
+    final court = Court();
+    expect(court.difficulty, Difficulty.easy);
+    final right = Controls()..right = true;
+    court.update(right);
+    court.update(right);
+    expect(court.difficulty, Difficulty.hard);
+    expect(court.phase, Phase.title);
+    court.update(Controls()..left = true);
+    expect(court.difficulty, Difficulty.easy);
+    court.update(Controls()..right = true);
+    court.update(Controls()..start = true);
+    expect(court.difficulty, Difficulty.hard);
+    expect(court.phase, isNot(Phase.title));
+  });
+
   test('the title picture uses the Famicom colors', () {
     final court = Court()..tick = 10;
     final fb = Framebuffer();

@@ -23,6 +23,8 @@ const double liftScale = 100;
 
 enum Phase { title, ready, play, banner, gameOver }
 
+enum Difficulty { easy, hard }
+
 class Controls {
   bool left = false;
   bool right = false;
@@ -123,6 +125,9 @@ class Court {
   int _rng;
   int tick = 0;
   Phase phase = Phase.title;
+  Difficulty difficulty = Difficulty.easy;
+  bool _heldLeft = false;
+  bool _heldRight = false;
   bool paused = false;
   bool muted = false;
   int scoreL = 0;
@@ -179,6 +184,7 @@ class Court {
     if (input.mute) muted = !muted;
     if (shake > 0) shake--;
     if (flashT > 0) flashT--;
+    _pickMode(input);
 
     switch (phase) {
       case Phase.title:
@@ -203,6 +209,16 @@ class Court {
     }
     _stepSparks();
   }
+
+  void _pickMode(Controls input) {
+    final pick = phase == Phase.title || phase == Phase.gameOver;
+    if (pick && input.left && !_heldLeft) difficulty = Difficulty.easy;
+    if (pick && input.right && !_heldRight) difficulty = Difficulty.hard;
+    _heldLeft = input.left;
+    _heldRight = input.right;
+  }
+
+  bool get _hard => difficulty == Difficulty.hard;
 
   void _beginMatch() {
     scoreL = 0;
@@ -277,7 +293,7 @@ class Court {
     final cpu = _cpu();
     final aiming = human.charging || human.swing || near.swingT > 0;
     _move(near, human, locked: aiming);
-    _move(far, cpu);
+    _move(far, cpu, scale: _hard ? 1.08 : 0.55);
     if (!shuttle.alive) return;
     final prevX = shuttle.x;
     final prevZ = shuttle.z;
@@ -291,13 +307,13 @@ class Court {
     if (landed && shuttle.lastHitter == hitterBefore) _resolveLanding();
   }
 
-  void _move(Athlete a, Controls c, {bool locked = false}) {
+  void _move(Athlete a, Controls c, {bool locked = false, double scale = 1}) {
     if (locked) {
       a.moving = false;
       return;
     }
-    var speedX = moveX;
-    var speedZ = moveZ;
+    var speedX = moveX * scale;
+    var speedZ = moveZ * scale;
     if (a.swingT > 0) {
       speedX *= 0.7;
       speedZ *= 0.7;
@@ -329,7 +345,9 @@ class Court {
       targetZ = a.z;
     } else if (coming) {
       final mark = _predictIntercept();
-      cpuCommit ??= mark.$1 + (_roll(21) - 10) / 40;
+      final spread = _hard ? 7 : 31;
+      final wobble = (_roll(spread) - spread ~/ 2) / (_hard ? 70 : 26);
+      cpuCommit ??= mark.$1 + wobble;
       targetX = cpuCommit!;
       targetZ = mark.$2;
     } else {
@@ -338,23 +356,33 @@ class Court {
       targetZ = 0.8;
     }
     targetZ = targetZ.clamp(a.minZ, a.maxZ).toDouble();
-    if (a.x > targetX + 0.03) c.left = true;
-    if (a.x < targetX - 0.03) c.right = true;
-    if (a.z < targetZ - 0.02) c.up = true;
-    if (a.z > targetZ + 0.02) c.down = true;
+    final slackX = _hard ? 0.02 : 0.08;
+    final slackZ = _hard ? 0.02 : 0.06;
+    if (a.x > targetX + slackX) c.left = true;
+    if (a.x < targetX - slackX) c.right = true;
+    if (a.z < targetZ - slackZ) c.up = true;
+    if (a.z > targetZ + slackZ) c.down = true;
 
-    final nearEnough = (shuttle.x - a.x).abs() < (shuttle.vh.abs() > 0.02 ? 0.16 : 0.2) &&
-        (shuttle.z - a.z).abs() < 0.09 &&
-        shuttle.h < 0.34 &&
+    final xReach = _hard ? 0.28 : 0.11;
+    final zReach = _hard ? 0.12 : 0.055;
+    final nearEnough = (shuttle.x - a.x).abs() < xReach &&
+        (shuttle.z - a.z).abs() < zReach &&
+        shuttle.h < (_hard ? 0.40 : 0.28) &&
         shuttle.h > 0.02;
     if (a.swingT == 0 &&
         nearEnough &&
         tick >= cpuThinkUntil &&
         shuttle.lastHitter != 1) {
       if (!ownServe || shuttle.vh < 0.004) {
-        a.power = 0.4 + _roll(11) / 16;
-        a.aimX = (_roll(5) - 2) / 2;
-        a.aimZ = _roll(4) == 0 ? -1 : (_roll(3) == 0 ? 1 : 0);
+        if (_hard) {
+          a.power = (0.74 + _roll(6) / 20).clamp(0.0, 1.0);
+          a.aimX = near.x > 0.12 ? -1 : (near.x < -0.12 ? 1 : 0);
+          a.aimZ = _roll(5) == 0 ? -1 : 1;
+        } else {
+          a.power = 0.24 + _roll(4) / 20;
+          a.aimX = (_roll(3) - 1).toDouble();
+          a.aimZ = _roll(3) == 0 ? 1 : -1;
+        }
         c.swing = true;
       }
     }
@@ -416,7 +444,11 @@ class Court {
     } else {
       kind = 'drive';
     }
-    final error = a.side == 1 ? (_roll(17) - 8) / 28 : 0.0;
+    final error = a.side != 1
+        ? 0.0
+        : _hard
+            ? (_roll(7) - 3) / 40
+            : (_roll(21) - 10) / 18;
     final launch = planLaunch(
       x: shuttle.x,
       z: shuttle.z,
@@ -439,7 +471,8 @@ class Court {
     if (!firstServe) shuttle.serve = false;
     if (a.side == 0) {
       cpuCommit = null;
-      cpuThinkUntil = tick + (kind == 'smash' || kind == 'drop' ? 18 : 10);
+      final base = kind == 'smash' || kind == 'drop' ? 18 : 10;
+      cpuThinkUntil = tick + (_hard ? base ~/ 2 : base + 14);
     }
     freeze = a.power > 0.75 ? 4 : 2;
     if (a.power > 0.7) shake = 4 + (a.power * 6).round();

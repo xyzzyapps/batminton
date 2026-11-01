@@ -6,6 +6,7 @@ The playable page is https://xyzzyapps.github.io/batminton/.
 
 ## Play
 
+- On the title screen, Left and Right pick Easy or Hard.
 - Arrow keys move on the court. Up moves toward the net.
 - Hold Space to aim. The player does not move while Space is held.
 - Arrow keys set the shot direction. Down aims a short shot.

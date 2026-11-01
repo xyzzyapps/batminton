@@ -5,7 +5,7 @@ import 'sprites.dart';
 
 void render(Framebuffer fb, Court court) {
   if (court.phase == Phase.title) {
-    _title(fb, court.tick);
+    _title(fb, court);
     return;
   }
   _hall(fb, court.tick);
@@ -35,10 +35,12 @@ void render(Framebuffer fb, Court court) {
     if (court.phase == Phase.gameOver && (court.tick ~/ 28) % 2 == 0) {
       _center(fb, 'PRESS START', 156, Pal.gold, 1);
     }
+    if (court.phase == Phase.gameOver) _modePick(fb, court, 172);
   }
 }
 
-void _title(Framebuffer fb, int tick) {
+void _title(Framebuffer fb, Court court) {
+  final tick = court.tick;
   _hall(fb, tick);
   _net(fb);
   fb.blit(
@@ -71,12 +73,29 @@ void _title(Framebuffer fb, int tick) {
   _center(fb, 'BADMINTON', 22, Pal.gold, 3);
   _center(fb, 'FAMICOM SINGLES', 42, Pal.white, 1);
   _center(fb, 'FIRST TO 11', 50, Pal.lime, 1);
+  _modePick(fb, court, 72);
   if ((tick ~/ 30) % 2 == 0) {
     _center(fb, 'PRESS START', 96, Pal.gold, 2);
   }
   fb.rect(0, 220, 256, 20, Pal.navy);
   _center(fb, 'HOLD SPACE TO AIM', 222, Pal.white, 1);
-  _center(fb, 'ARROWS SET DIRECTION', 230, Pal.gold, 1);
+  _center(fb, 'LEFT RIGHT PICK MODE', 230, Pal.gold, 1);
+}
+
+void _modePick(Framebuffer fb, Court court, int y) {
+  const scale = 2;
+  final easyW = textWidth('EASY', scale);
+  final hardW = textWidth('HARD', scale);
+  const gap = 24;
+  final total = easyW + gap + hardW;
+  final x = (Framebuffer.width - total) ~/ 2;
+  final easy = court.difficulty == Difficulty.easy;
+  drawOutlined(fb, 'EASY', x, y, easy ? Pal.gold : Pal.white, scale);
+  drawOutlined(fb, 'HARD', x + easyW + gap, y, easy ? Pal.white : Pal.gold, scale);
+  final markX = easy ? x - 8 : x + easyW + gap + hardW + 3;
+  if ((court.tick ~/ 10) & 1 == 0) {
+    fb.rect(markX, y + 3, 3, 3, Pal.lime);
+  }
 }
 
 void _hall(Framebuffer fb, int tick) {
@@ -293,6 +312,8 @@ void _hud(Framebuffer fb, Court court) {
   final status = court.statusLine;
   if (status.isNotEmpty && !court.muted) {
     _center(fb, status, 5, Pal.lime, 1);
+  } else if (!court.muted) {
+    _center(fb, court.difficulty == Difficulty.easy ? 'EASY' : 'HARD', 5, Pal.sky, 1);
   }
   if (court.muted) {
     drawText(fb, 'MUTE', 112, 5, Pal.red, 1);
