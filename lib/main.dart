@@ -64,8 +64,6 @@ bool _isGameKey(String code) {
       code == 'KeyD' ||
       code == 'KeyW' ||
       code == 'KeyS' ||
-      code == 'KeyZ' ||
-      code == 'KeyX' ||
       code == 'KeyM' ||
       code == 'KeyP';
 }
@@ -79,8 +77,7 @@ void _press(String code, bool down) {
   } else {
     held.remove(code);
   }
-  final swingHeld =
-      held.contains('Space') || held.contains('KeyZ') || held.contains('KeyX');
+  final swingHeld = held.contains('Space');
   if (controls.charging && !swingHeld) controls.swing = true;
   controls.charging = swingHeld;
   controls.left = held.contains('ArrowLeft') || held.contains('KeyA');

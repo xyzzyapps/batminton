@@ -75,8 +75,8 @@ void _title(Framebuffer fb, int tick) {
     _center(fb, 'PRESS START', 96, Pal.gold, 2);
   }
   fb.rect(0, 220, 256, 20, Pal.navy);
-  _center(fb, 'HOLD Z FOR POWER', 222, Pal.white, 1);
-  _center(fb, 'ARROWS AIM THE SHOT', 230, Pal.gold, 1);
+  _center(fb, 'HOLD SPACE TO AIM', 222, Pal.white, 1);
+  _center(fb, 'ARROWS SET DIRECTION', 230, Pal.gold, 1);
 }
 
 void _hall(Framebuffer fb, int tick) {

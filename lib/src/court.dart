@@ -274,7 +274,8 @@ class Court {
         ..aimZ = preview.aimZ;
     }
     final cpu = _cpu();
-    _move(near, human, locked: human.charging);
+    final aiming = human.charging || human.swing || near.swingT > 0;
+    _move(near, human, locked: aiming);
     _move(far, cpu);
     if (!shuttle.alive) return;
     final prevX = shuttle.x;
@@ -577,12 +578,13 @@ ShotWish shotWish(Controls controls, int frames) {
   required double aimZ,
   required bool serve,
 }) {
-  var depth = 0.6 + aimZ * 0.16 + power * 0.18;
-  if (serve) depth = 0.74 + aimZ * 0.08 + power * 0.08;
-  final cap = serve ? 0.68 : 0.54;
+  // A normal shot lands in the far court. Down aims a short shot.
+  var depth = 0.84 + power * 0.08 + aimZ * 0.14;
+  if (serve) depth = 0.74 + power * 0.08 + aimZ * 0.05;
+  final cap = serve ? 0.68 : 0.58;
   if (depth < cap) depth = cap;
   if (depth > 0.96) depth = 0.96;
-  final lateral = (aimX * (0.25 + power * 0.55)).clamp(-0.84, 0.84);
+  final lateral = (aimX * (0.40 + power * 0.40)).clamp(-0.88, 0.88);
   return (lateral, dir > 0 ? depth : 1 - depth);
 }
 
@@ -607,35 +609,48 @@ Launch planLaunch({
   );
   final targetX = target.$1;
   final targetZ = target.$2;
-  var vh = 0.014 - power * 0.005;
-  if (aimZ < 0) vh += 0.003;
-  if (vh < 0.008) vh = 0.008;
-  if (vh > 0.018) vh = 0.018;
-  final travel = (targetZ - z).abs();
-  var speed = travel * (0.007 + power * 0.010);
-  final minSpeed = serve ? 0.004 : 0.004 + power * 0.005;
-  final maxSpeed = 0.007 + power * 0.010;
-  if (speed < minSpeed) speed = minSpeed;
-  var best = Launch(0, dir * speed, vh);
-  for (var n = 0; n < 12; n++) {
-    final flight = flyShuttle(x, z, h, 0, dir * speed, vh);
-    final end = flight.shuttle;
-    if (end.hitNet || !end.clearedNet) {
-      vh += 0.0016;
-      if (vh > 0.022) vh = 0.022;
-      best = Launch(0, dir * speed, vh);
-      continue;
+  var speed = serve ? 0.008 : 0.008 + power * 0.006;
+  if (!serve && aimZ < 0) speed *= 0.75;
+  if (!serve && aimZ > 0) speed *= 1.08;
+  Launch? best;
+  var bestMiss = 99.0;
+  for (var pass = 0; pass < 6; pass++) {
+    var lo = 0.003;
+    var hi = 0.032;
+    double? passMiss;
+    for (var n = 0; n < 10; n++) {
+      final vh = (lo + hi) / 2;
+      final flight = flyShuttle(x, z, h, 0, dir * speed, vh);
+      final end = flight.shuttle;
+      final blocked = end.hitNet || !end.clearedNet;
+      if (blocked) {
+        lo = vh;
+        continue;
+      }
+      final miss = dir > 0 ? targetZ - end.z : end.z - targetZ;
+      final frames = flight.frames < 1 ? 1 : flight.frames;
+      if (miss.abs() < bestMiss) {
+        bestMiss = miss.abs();
+        best = Launch((targetX - x) / frames, dir * speed, vh);
+      }
+      if (passMiss == null || miss.abs() < passMiss.abs()) passMiss = miss;
+      if (miss.abs() < 0.03) return best!;
+      if (miss > 0) {
+        lo = vh;
+      } else {
+        hi = vh;
+      }
     }
-    final frames = flight.frames < 1 ? 1 : flight.frames;
-    final vx = (targetX - x) / frames;
-    best = Launch(vx, dir * speed, vh);
-    final miss = dir > 0 ? targetZ - end.z : end.z - targetZ;
-    if (miss.abs() < 0.04) break;
-    speed += miss * 0.025;
-    if (speed < minSpeed * 0.7) speed = minSpeed * 0.7;
-    if (speed > maxSpeed) speed = maxSpeed;
+    if (best != null && bestMiss < 0.04) return best;
+    if (passMiss == null || passMiss > 0) {
+      speed *= 1.16;
+    } else {
+      speed *= 0.82;
+    }
+    if (speed < 0.003) speed = 0.003;
+    if (speed > 0.028) speed = 0.028;
   }
-  return best;
+  return best ?? Launch(0, dir * speed, 0.014);
 }
 
 Flight flyShuttle(double x, double z, double h, double vx, double vz, double vh) {

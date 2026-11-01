@@ -130,9 +130,38 @@ void main() {
       dir: 1,
       kind: 'clear',
       power: 1,
-      aimZ: 1,
     );
     expect(hard.vz.abs(), greaterThan(soft.vz.abs()));
+    final softLand = flyShuttle(0, 0.2, 0.12, soft.vx, soft.vz, soft.vh);
+    final hardLand = flyShuttle(0, 0.2, 0.12, hard.vx, hard.vz, hard.vh);
+    expect(softLand.shuttle.hitNet, isFalse);
+    expect(hardLand.shuttle.hitNet, isFalse);
+    expect(softLand.shuttle.z, greaterThan(0.78));
+    expect(softLand.shuttle.z, lessThanOrEqualTo(1));
+    expect(hardLand.shuttle.z, greaterThan(0.85));
+    expect(hardLand.shuttle.z, lessThanOrEqualTo(1));
+    final drop = planLaunch(
+      x: 0,
+      z: 0.2,
+      h: 0.12,
+      dir: 1,
+      kind: 'clear',
+      power: 0.22,
+      aimZ: -1,
+    );
+    final dropLand = flyShuttle(0, 0.2, 0.12, drop.vx, drop.vz, drop.vh);
+    expect(dropLand.shuttle.z, lessThan(softLand.shuttle.z - 0.08));
+    final fromNet = planLaunch(
+      x: 0,
+      z: 0.4,
+      h: 0.12,
+      dir: 1,
+      kind: 'drive',
+      power: 1,
+    );
+    final fromNetLand = flyShuttle(0, 0.4, 0.12, fromNet.vx, fromNet.vz, fromNet.vh);
+    expect(fromNetLand.shuttle.hitNet, isFalse);
+    expect(fromNetLand.shuttle.z, inInclusiveRange(0.8, 1));
     final left = shotTarget(dir: 1, power: 1, aimX: -1, aimZ: 0, serve: false);
     final right = shotTarget(dir: 1, power: 1, aimX: 1, aimZ: 0, serve: false);
     expect(left.$1, lessThan(0));
@@ -146,6 +175,37 @@ void main() {
     expect(full.power, 1);
     expect(full.aimX, 1);
     expect(full.aimZ, 1);
+  });
+
+  test('space aims the shot and the player stays still', () {
+    final court = Court(seed: 1);
+    court.update(Controls()..start = true);
+    var guard = 0;
+    while (court.phase != Phase.play && guard++ < 80) {
+      court.update(Controls());
+    }
+    expect(court.phase, Phase.play);
+    final x0 = court.near.x;
+    final z0 = court.near.z;
+    final aim = Controls()
+      ..charging = true
+      ..right = true
+      ..up = true;
+    for (var i = 0; i < 30; i++) {
+      court.update(aim);
+    }
+    expect(court.near.x, x0);
+    expect(court.near.z, z0);
+    expect(court.near.aimX, 1);
+    expect(court.near.aimZ, 1);
+    expect(court.chargeFrames, 30);
+    court.update(Controls()
+      ..swing = true
+      ..right = true
+      ..down = true);
+    expect(court.near.x, x0);
+    expect(court.near.z, z0);
+    expect(court.near.aimZ, -1);
   });
 
   test('a charge shows a power bar and an aim mark', () {
