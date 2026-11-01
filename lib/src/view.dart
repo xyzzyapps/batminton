@@ -68,7 +68,7 @@ void _title(Framebuffer fb, int tick) {
   fb.rect(28, 16, 200, 44, Pal.navy);
   fb.rect(28, 16, 200, 2, Pal.gold);
   fb.rect(28, 58, 200, 2, Pal.gold);
-  _center(fb, 'BATMINTON', 22, Pal.gold, 3);
+  _center(fb, 'BADMINTON', 22, Pal.gold, 3);
   _center(fb, 'FAMICOM SINGLES', 42, Pal.white, 1);
   _center(fb, 'FIRST TO 11', 50, Pal.lime, 1);
   if ((tick ~/ 30) % 2 == 0) {

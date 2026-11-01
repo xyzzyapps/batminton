@@ -1,4 +1,4 @@
-# BATMINTON
+# BADMINTON
 
 A Famicom singles badminton game. You are the red player at the bottom. The computer is the blue player at the top. The first player to 11 points wins.
 
