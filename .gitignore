@@ -1,0 +1,6 @@
+.dart_tool/
+build/
+*.js.deps
+*.js.map
+.idea/
+.vscode/

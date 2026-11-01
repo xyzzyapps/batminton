@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BATMINTON</title>
+  <!--
+    Hosted at https://xyzzyapps.github.io/batminton/
+    X reads these tags and, on desktop, loads the page in the timeline as a Player Card.
+    The domain must pass the X Player Card validator before the inline player appears.
+    Do not add X-Frame-Options or a CSP frame-ancestors rule that blocks x.com.
+  -->
+  <meta name="twitter:card" content="player" />
+  <meta name="twitter:title" content="BATMINTON" />
+  <meta name="twitter:description" content="A Famicom badminton match. You versus the computer. First to 11 points." />
+  <meta name="twitter:image" content="https://xyzzyapps.github.io/batminton/preview.png" />
+  <meta name="twitter:image:alt" content="A Famicom badminton court. The near player stands at the bottom. The computer stands at the top." />
+  <meta name="twitter:player" content="https://xyzzyapps.github.io/batminton/" />
+  <meta name="twitter:player:width" content="480" />
+  <meta name="twitter:player:height" content="450" />
+  <meta property="og:title" content="BATMINTON" />
+  <meta property="og:description" content="A Famicom badminton match. You versus the computer. First to 11 points." />
+  <meta property="og:image" content="https://xyzzyapps.github.io/batminton/preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="628" />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    if (window.top !== window.self) document.documentElement.classList.add('embed');
+  </script>
+</head>
+<body>
+  <main>
+    <p class="mark">FAMICOM STYLE</p>
+    <div id="crt">
+      <canvas id="game" width="256" height="240"></canvas>
+      <div class="scan"></div>
+    </div>
+    <p class="help">Hold Z or Space. A longer hold makes a harder shot. Arrow keys aim that shot. Release the key to hit. Up still moves you to the net when you do not hold the shot key. Enter pauses. M mutes.</p>
+    <div id="pad">
+      <button type="button" data-code="ArrowLeft" aria-label="Move left">LEFT</button>
+      <button type="button" data-code="ArrowUp" aria-label="Move toward the net">UP</button>
+      <button type="button" data-code="ArrowDown" aria-label="Move back">DOWN</button>
+      <button type="button" data-code="ArrowRight" aria-label="Move right">RIGHT</button>
+      <button type="button" data-code="KeyZ" aria-label="Hold to charge the shot. Release to hit.">SWING</button>
+    </div>
+  </main>
+  <script>
+    function blitFrame(bytes, w, h, ox, oy) {
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d', { alpha: false });
+      ctx.imageSmoothingEnabled = false;
+      ctx.fillStyle = '#001858';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const src = bytes instanceof Uint8ClampedArray ? bytes : new Uint8ClampedArray(bytes);
+      ctx.putImageData(new ImageData(src, w, h), ox, oy);
+    }
+  </script>
+  <script src="main.dart.js"></script>
+</body>
+</html>
