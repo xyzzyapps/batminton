@@ -135,26 +135,40 @@ void _fans(Framebuffer fb, int tick) {
 }
 
 void _net(Framebuffer fb) {
-  final groundL = project(-1.04, netZ, 0);
-  final groundR = project(1.04, netZ, 0);
-  final topL = project(-1.04, netZ, netH);
-  final topR = project(1.04, netZ, netH);
-  final y0 = topL.y.round();
-  final y1 = groundL.y.round();
-  for (var y = y0; y <= y1; y++) {
-    final t = y1 == y0 ? 0.0 : (y - y0) / (y1 - y0);
-    final xL = topL.x + (groundL.x - topL.x) * t;
-    final xR = topR.x + (groundR.x - topR.x) * t;
-    final left = xL.round();
-    final right = xR.round();
-    for (var x = left; x <= right; x++) {
-      final tape = y < y0 + 2;
-      if (tape || x == left || x == right || ((x + y) & 1) == 0) {
+  const skirt = 0.05;
+  final half = nearHalf + (farHalf - nearHalf) * netZ;
+  final left = (centerX - half).round();
+  final right = (centerX + half).round();
+  for (var x = left; x <= right; x++) {
+    final courtX = ((x - centerX) / half).clamp(-1.0, 1.0);
+    final top = project(courtX, netZ, netTop(courtX));
+    final bot = project(courtX, netZ, skirt);
+    final yTop = top.y.round();
+    final yBot = bot.y.round();
+    for (var y = yTop; y <= yBot; y++) {
+      final tape = y <= yTop + 1;
+      if (tape || ((x + y) & 1) == 0) {
         fb.pset(x, y, Pal.white);
       } else {
         fb.pset(x, y, Pal.black);
       }
     }
+  }
+  _pole(fb, -1.06);
+  _pole(fb, 1.06);
+}
+
+void _pole(Framebuffer fb, double x) {
+  final ground = project(x, netZ, 0);
+  final cap = project(x, netZ, netPostH + 0.035);
+  final px = ground.x.round();
+  final y0 = cap.y.round();
+  final y1 = ground.y.round();
+  for (var y = y0; y <= y1; y++) {
+    fb.pset(px - 2, y, Pal.black);
+    fb.pset(px - 1, y, Pal.white);
+    fb.pset(px, y, Pal.white);
+    fb.pset(px + 1, y, Pal.black);
   }
 }
 

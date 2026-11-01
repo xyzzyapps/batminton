@@ -7,11 +7,12 @@
 const double netZ = 0.5;
 const double serviceNear = 0.32;
 const double serviceFar = 0.68;
-const double netH = 0.15;
+const double netH = 0.22;
+const double netPostH = 0.29;
 const double gravity = 0.00032;
 const double drag = 0.9985;
-const double moveX = 0.028;
-const double moveZ = 0.0105;
+const double moveX = 0.044;
+const double moveZ = 0.020;
 
 const double nearY = 208;
 const double farY = 64;
@@ -670,6 +671,12 @@ Flight flyShuttle(double x, double z, double h, double vx, double vz, double vh)
   return Flight(shuttle, frames);
 }
 
+/// The net is higher at the posts and lower at the center.
+double netTop(double x) {
+  final edge = x.abs() > 1 ? 1.0 : x.abs();
+  return netH + (netPostH - netH) * edge * edge;
+}
+
 /// Moves the shuttle one frame. Returns true when it meets the court.
 bool stepShuttle(Shuttle s) {
   if (!s.alive) return false;
@@ -691,7 +698,7 @@ bool stepShuttle(Shuttle s) {
     final dz = s.z - z0;
     final t = dz == 0 ? 0.0 : (netZ - z0) / dz;
     final hCross = h0 + (s.h - h0) * t;
-    if (hCross < netH) {
+    if (hCross < netTop(s.x)) {
       final speed = s.vz.abs();
       s.hitNet = true;
       s.z = z0 < netZ ? netZ - 0.02 : netZ + 0.02;
